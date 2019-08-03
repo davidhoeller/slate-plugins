@@ -26,5 +26,8 @@
   },
   "keywords": [
     "slate"
-  ]
+  ],
+  "devDependencies": {
+    "slate": "0.42.2"
+  }
 }

@@ -78,7 +78,7 @@ function DropOrPasteImages(options = {}) {
     const range = getEventRange(event, editor)
 
     switch (transfer.type) {
-      case 'files':
+      case 'files': // image drop from desktop
         return onInsertFiles(event, change, next, transfer, range)
       case 'html':
         return onInsertHtml(event, change, next, transfer, range)

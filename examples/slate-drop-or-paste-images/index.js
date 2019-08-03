@@ -30,9 +30,12 @@ class Image extends React.Component {
     const { attributes } = this.props
     const { src } = this.state
     return src ? (
-      <img {...attributes} src={src} />
+      <React.Fragment>
+        <img {...attributes} src={src}/>
+        {children}
+      </React.Fragment>
     ) : (
-      <div {...attributes}>Loading...</div>
+      <span {...attributes}>Loading...{children}</span>
     )
   }
 }
