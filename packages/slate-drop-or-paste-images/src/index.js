@@ -79,9 +79,9 @@ function DropOrPasteImages(options = {}) {
       return onInsertFiles(event, editor, next, transfer, range)
     case 'html':
       return onInsertHtml(event, editor, next, transfer, range)
-    case 'fragment':
-    case 'text':
-      return onInsertText(event, editor, next, transfer, range)
+      // case 'fragment':
+      // case 'text':
+      //   return onInsertText(event, editor, next, transfer, range)
     default:
       return next()
     }
@@ -101,17 +101,19 @@ function DropOrPasteImages(options = {}) {
   function onInsertFiles(event, editor, next, transfer, range) {
     const { files } = transfer
 
-    for (const file of files) {
-      if (extensions) {
-        const type = file.type
-        const [, ext] = type.split('/')
-        if (!matchExt(ext)) continue
-      }
+    // see pr-35, following CameronAckermanSEL's proposal, https://github.com/ianstormtaylor/slate-plugins/pull/35#discussion_r264957680
+    const filteredFiles = !extensions ? files : files.filter(file => {
+      const { type } = file
+      const [, ext] = type.split('/')
+      return ext && matchExt(ext)
+    })
 
-      if (range) {
-        editor.select(range)
-      }
 
+    if (!filteredFiles.length)
+      return next()
+
+    for (const file of filteredFiles) {
+      if (range) editor.select(range)
       asyncApplyChange(editor, file)
     }
   }
@@ -132,57 +134,67 @@ function DropOrPasteImages(options = {}) {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
     const body = doc.body
-    const firstChild = body.firstChild
-    if (firstChild.nodeName.toLowerCase() != 'img') return next()
+    const files = []
 
-    const src = firstChild.src
+    // find all images in the body
+    // actually, this should be done by a proper HTML parser outside the plugin
 
-    if (extensions) {
-      const ext = extname(src).slice(1)
-      if (!matchExt(ext)) return next()
+    function buildImagesList(parent) {
+      for (const child of parent.childNodes) {
+        const { src } = child
+        if (['a', 'img'].includes(child.nodeName.toLowerCase()) && src) {
+          const ext = extname(src).slice(1)
+          if (!extensions || matchExt(ext))
+            files.push({ src, ext })
+        }
+        else {
+          buildImagesList(child)
+        }
+      }
     }
 
-    loadImageFile(src, (err, file) => {
-      if (err) return
+    buildImagesList(body)
 
-      editor.onChange(c => {
-        if (range) {
-          c.select(range)
-        }
+    if (!files.length)
+      return next()
 
-        asyncApplyChange(c, file)
+    files.forEach((file) => {
+      loadImageFile(file.src, (err, loadedFile) => {
+        if (err) return
+        if (range) editor.select(range)
+        asyncApplyChange(editor, loadedFile)
       })
     })
   }
 
-  /**
-   * On drop or paste text.
-   *
-   * @param {Event} event
-   * @param {Editor} editor
-   * @param {Function} next
-   * @param {Object} transfer
-   * @param {Range} range
-   * @return {Boolean}
-   */
-
-  function onInsertText(event, editor, next, transfer, range) {
-    const { text } = transfer
-    if (!isUrl(text)) return next()
-    if (!isImage(text)) return next()
-
-    loadImageFile(text, (err, file) => {
-      if (err) return
-
-      editor.onChange(c => {
-        if (range) {
-          c.select(range)
-        }
-
-        asyncApplyChange(c, editor, file)
-      })
-    })
-  }
+  // /**
+  //  * On drop or paste text.
+  //  *
+  //  * @param {Event} event
+  //  * @param {Editor} editor
+  //  * @param {Function} next
+  //  * @param {Object} transfer
+  //  * @param {Range} range
+  //  * @return {Boolean}
+  //  */
+  //
+  // function onInsertText(event, editor, next, transfer, range) {
+  //   const { text } = transfer
+  //   if (!isUrl(text)) return next()
+  //   if (!isImage(text)) return next()
+  //
+  //   loadImageFile(text, (err, file) => {
+  //     if (err) return
+  //
+  //     editor.onChange(c => { // TODO is c still fine or do we have a legacy "change" here instead of "editor"? - probably we have to change it
+  //       if (range) {
+  //         c.select(range)
+  //       }
+  //
+  //       asyncApplyChange(c, editor, file)
+  //     })
+  //   })
+  // }
 
   /**
    * Return the plugin.
