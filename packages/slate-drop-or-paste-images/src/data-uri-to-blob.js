@@ -1,5 +1,6 @@
 /**
- * Return a `Blob` for the given data `uri`.
+ * Return a `Blob` for the given data `uri`. The result can then be converted
+ * to a valid base64 encoded `src` string for the image.
  *
  * Copied from: https://github.com/component/data-uri-to-blob/blob/master/index.js
  *

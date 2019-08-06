@@ -2,7 +2,7 @@ import Promise from 'es6-promise'
 import isImage from 'is-image'
 import isUrl from 'is-url'
 import logger from 'slate-dev-logger'
-import loadImageFile from './load-image-file'
+import  loadImageFile  from './load-image-file'
 import { extname } from 'path'
 import { getEventTransfer } from 'slate-react'
 
